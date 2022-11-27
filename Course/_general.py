@@ -1,16 +1,16 @@
 """
 Курс "ТИМ-ориентированная аналитика. Современные инструменты работа с данными"
-
 Общие настройки и инструменты (не изменять)
 """
-from msilib import UuidCreate
+import msilib
+# from msilib import UuidCreate
 import os
 import uuid
 import ifcopenshell
 import time
 import tempfile
 import xml.etree.ElementTree as _xml
-import pandas
+
 
 class mguu_cource_tools:
     """
@@ -18,10 +18,10 @@ class mguu_cource_tools:
     В противном случае возврат None
     """
 
-    @staticmethod
+    @staticmethod #доступ к папке с файлами примерами, находится в пространстве файла
     def get_example_file_path(ex_file_name):
         file_dir = os.path.dirname(__file__)
-        ifc_file_path = os.path.join(file_dir, '../DataExamples/' + ex_file_name)
+        ifc_file_path = os.path.join(file_dir + '\DataExamples\\' + ex_file_name)
         ifc_file_path = os.path.abspath(os.path.realpath(ifc_file_path))
         if os.path.exists(ifc_file_path):
             return ifc_file_path
@@ -54,14 +54,14 @@ class mguu_cource_tools:
     @staticmethod
     def create_ifc_by_template():
         # IFC template creation
-        uuid_random = UuidCreate()
+        uuid_random = ifcopenshell.guid.compress(uuid.uuid1().hex)
         filename = uuid_random + ".ifc"
         timestamp = time.time()
         timestring = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime(timestamp))
         creator = "-"
         organization = "MGUU"
         application, application_version = "IfcOpenShell", "0.7.0"
-        project_globalid, project_name = UuidCreate(), "Hello, Ifc"
+        project_globalid, project_name = ifcopenshell.guid.compress(uuid.uuid1().hex), "Hello, Ifc"
 
         # A template IFC file to quickly populate entity instances for an IfcProject with its dependencies
         template = """ISO-10303-21;
@@ -95,9 +95,9 @@ ENDSEC;
 END-ISO-10303-21;
 """ % locals()
 
-        # Write the template to a temporary file 
+        # Write the template to a temporary file
         file_dir = os.path.dirname(__file__)
-        ifc_file_path = os.path.join(file_dir, '../DataExamples/UsersCreated/' + filename)
+        ifc_file_path = os.path.join(file_dir + '.../DataExamples/UsersCreated/' + filename)
         ifc_file_path = os.path.abspath(os.path.realpath(ifc_file_path))
         with open(ifc_file_path, "w") as f:
             f.write(template)
@@ -112,44 +112,36 @@ END-ISO-10303-21;
     # Получение объектных свойств из сущности
     @staticmethod
     def get_object_properties(ifc_entity):
-        temp_props = {"IfcClass": ifc_entity.is_a(), "GlobalId": ifc_entity.GlobalId}
+        out_props = dict()
+        # IfcRelDefinesByProperties
         ifc_props_root = ifc_entity.IsDefinedBy
         for props_group in ifc_props_root:
-            if props_group.is_a("IfcRelDefinesByProperties"):
-                props_definition = props_group.RelatingPropertyDefinition
-
-                def get_prop_data(props_array):
-                    for ps in props_array:
-                        p_name = ps.Name
-
-                        # print(p_name)
-
-                        def check_prop(check_value):
-                            if check_value is not None:
-                                if isinstance(check_value, (int, float, bool, str)):
-                                    temp_props[p_name] = check_value
-                                elif isinstance(check_value, (tuple, list)):
-                                    ...
-                                else:
-                                    try:
-                                        d_new = check_value.get_info()
-                                    except():
-                                        print(check_value)
-                                    for k2, v2 in d_new.items():
-                                        check_prop(v2)
-                            pass
-
-                        for k1, v1 in ps.get_info().items():
-                            check_prop(v1)
-                    pass
-
-                # property sets
-                if props_definition.is_a("IfcPropertySet"):
-                    get_prop_data(props_definition.HasProperties)
-                # qto
-                if props_definition.is_a("IfcElementQuantity"):
-                    get_prop_data(props_definition.Quantities)
-        return temp_props
+            # print(props_group)
+            props_definition = props_group.RelatingPropertyDefinition
+            if props_definition.is_a("IfcPropertySet"):
+                # print("IfcPropertySet")
+                for props_definition_prop in props_definition.HasProperties:
+                    # print(props_definition_prop)
+                    if props_definition_prop.is_a("IfcPropertySingleValue"):
+                        out_props[props_definition_prop.Name] = props_definition_prop.NominalValue
+                        # print(str(props_definition_prop.Name) + ' ' + str(props_definition_prop.NominalValue))
+            elif props_definition.is_a("IfcElementQuantity"):
+                # print("IfcElementQuantity")
+                for one_quantity in props_definition.Quantities:
+                    # print(one_quantity)
+                    if one_quantity.is_a("IfcQuantityArea"):
+                        out_props[one_quantity.Name] = one_quantity.AreaValue
+                    elif one_quantity.is_a("IfcQuantityCount"):
+                        out_props[one_quantity.Name] = one_quantity.CountValue
+                    elif one_quantity.is_a("IfcQuantityLength"):
+                        out_props[one_quantity.Name] = one_quantity.LengthValue
+                    elif one_quantity.is_a("IfcQuantityTime"):
+                        out_props[one_quantity.Name] = one_quantity.TimeValue
+                    elif one_quantity.is_a("IfcQuantityVolume"):
+                        out_props[one_quantity.Name] = one_quantity.VolumeValue
+                    elif one_quantity.is_a("IfcQuantityWeight"):
+                        out_props[one_quantity.Name] = one_quantity.WeightValue
+        return out_props
 
         # Получение словаря по уровням со значением свойства по его имени
 
@@ -208,30 +200,3 @@ END-ISO-10303-21;
                 temp_table_row_string = '|'.join(str(row_element) for row_element in table_row)
                 _file.write(temp_table_row_string + "\n")
         pass
-    #Получение супер-таблицы csv из файла IFC
-    @staticmethod
-    def getting_super_table_by_ifc(ifc_file_path):
-        ifc_file = ifcopenshell.open(ifc_file_path)
-        ifc_objects = ifc_file.by_type("IfcObject")
-        list_temp = list()
-        total_props_names = list()
-        for ifc_entity in ifc_objects:
-            temp_props = mguu_cource_tools.get_object_properties(ifc_entity)
-            list_temp.append(temp_props)
-            # merge props
-            current_names = temp_props.keys()
-            for key in current_names:
-                if key not in total_props_names:
-                    total_props_names.append(key)
-        out_data = dict()
-        for key in total_props_names:
-            out_data[key] = []
-        for entity_data in list_temp:
-            for pr in total_props_names:
-                if pr in entity_data.keys():
-                    out_data[pr].append(entity_data[pr])
-                else:
-                    out_data[pr].append(None)
-        df = pandas.DataFrame(data=out_data, columns=total_props_names)
-        df.to_csv(ifc_file_path.replace(".ifc", ".csv"))
-        return 1
