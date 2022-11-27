@@ -11,16 +11,39 @@ import uuid #генерит униакльный id номер,в зависис
 import ifcopenshell as _ifc
 import os
 
-#by type
-# ifc_file = _ifc.open(mguu_cource_tools.get_example_file_path("Renga_House.ifc"))
-# ifc_project = ifc_file.by_type("IfcProject")[0]
-# print(str(ifc_project.get_info()))
+import ifcopenshell as _ifc
 
-file_dir = os.path.dirname(__file__)
-ifc_file_path = os.path.join(file_dir + '\DataExamples\\' + "Renga_House.ifc")
-ifc_file_path_2 = os.path.abspath(os.path.realpath(ifc_file_path))
-file = _ifc.open(ifc_file_path_2)
-print(file)
-print(file_dir)
-print(ifc_file_path)
-print(ifc_file_path_2)
+#by type
+ifc_file = _ifc.open(mguu_cource_tools.get_example_file_path("Renga_House.ifc"))
+ifc_project = ifc_file.by_type("IfcProject")[0]
+# print(str(ifc_project.get_info()))
+step_id = ifc_project.id()
+# print(step_id)
+
+
+#by id
+ifc_project = ifc_file.by_id(step_id)
+# print(ifc_project.get_info())
+
+
+#by uuid
+guid_old = '5bb660ae-654b-400c-8492-cecbfc1bdfc3'
+uuid_ifc = mguu_cource_tools.convert_uuid_to_guid(guid_old)
+
+ifc_project = ifc_file.by_guid(uuid_ifc)
+# print(ifc_project.get_info())
+
+#работа с окном и стеной
+window_uuid = '1lG7A9IimhR$$PamwmLlhY'
+ifc_window = ifc_file.by_guid(window_uuid)
+print(ifc_window)
+
+# print('get_inverse') #данные о матриале и соседних элементах
+# elems_inverse = ifc_file.get_inverse(ifc_window)
+# for elem_inv in elems_inverse:
+#     print(elem_inv)
+
+print("traverse") #данные о самом изделии, его геометрии и т.д.
+elems_traverse = ifc_file.traverse(ifc_window, 3)
+for elem_tr in elems_traverse:
+    print(elem_tr)
