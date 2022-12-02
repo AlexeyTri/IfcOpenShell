@@ -105,7 +105,7 @@ ifc_file.createIfcRelContainedInSpatialStructure(mguu_cource_tools.create_guid()
     None, [wall_object,roof_object], ifc_building_storey)
 
 ifc_file.write(ifc_file_path)
-print(ifc_project)
+print(ifc_file)
 
 
 

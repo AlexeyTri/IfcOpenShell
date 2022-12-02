@@ -65,11 +65,22 @@ def get_object_geometry (ifc_entity):
                                     for one_plg in one_face.Bounds[0].Bound.Polygon:
                                         print(one_plg)
 
-ifc_file = _ifc.open(mguu_cource_tools.get_example_file_path('Renga_House.ifc'))
-ifc_object_id = '3ZZpg7C_CNTUvpxzN75M8Y'
-ifc_object = ifc_file.by_guid(ifc_object_id)
-print(ifc_object)
+ifc_file = _ifc.open(mguu_cource_tools.get_example_file_path('3sJ7KyReuHxOk8J1sMJsnw.ifc'))
+# ifc_object_id = '3sJ7KyReuHxOk8J1sMJsnw'
+# ifc_object_id = '3ZZpg7C_CNTUvpxzN75M8Y'
+# ifc_object = ifc_file.by_guid(ifc_object_id)
+# print(ifc_object)
+ifc_project = ifc_file.by_type("IfcProject")[0]
+step_id = ifc_project.id()
+ifc_project = ifc_file.by_id(step_id)
 
-get_object_geometry(ifc_object )
+print(step_id)
+print(ifc_project)
+
+
+
+
+
+# get_object_geometry(ifc_object )
 #object_props = get_object_properties(ifc_file, ifc_object)
 #print(str(object_props ))
