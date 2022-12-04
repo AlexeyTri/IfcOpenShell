@@ -196,7 +196,7 @@ END-ISO-10303-21;
     @staticmethod
     def write_to_file(save_name_file, table_to_record):
         file_dir = os.path.dirname(__file__)
-        save_path = os.path.join(file_dir, '../DataExamples/UsersCreated/' + save_name_file + ".txt")
+        save_path = os.path.join(file_dir + '.../DataExamples/UsersCreated/' + save_name_file + ".txt")
         save_path = os.path.abspath(os.path.realpath(save_path))
         with open(save_path, "w", encoding="utf8") as _file:
             for table_row in table_to_record:
